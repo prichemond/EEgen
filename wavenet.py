@@ -39,7 +39,7 @@ def dilated_block(hidden, rate, outsize, scope):
         return slim.batch_norm(hidden, scope='norm_filterXgate')    
 
 
-def eegnet_v2(inputs,
+def wavenet_model(inputs,
               weight_decay=0.00004,
               reuse=None, 
               is_training=True,
