@@ -5,7 +5,9 @@ Created on Sun Jan 29 02:16:37 2017
 
 @author: prichemond
 """
+import mne as mne
 from mne.datasets import sample
+
 data_path = sample.data_path()
 raw_fname = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw.fif'
 
