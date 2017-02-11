@@ -21,7 +21,9 @@ from datetime import datetime
 import time
 
 import tensorflow as tf
-import prettytensor as pt
+import tensorflow.contrib.slim as slim
+from tensorflow.python import debug as tf_debug
+#import prettytensor as pt
 import numpy as np
 import seaborn as sns
 
