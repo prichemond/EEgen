@@ -456,7 +456,7 @@ if __name__ == '__main__':
 
   return softmax_linear
   
-<<<<<<< HEAD
+
 def print_model_profiler():
   param_stats = tf.contrib.tfprof.model_analyzer.print_model_analysis(
     tf.get_default_graph(),
@@ -479,5 +479,3 @@ def print_model_profiler():
   #             options=tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE),
   #             run_metadata=run_metadata)
   #
-=======
->>>>>>> 512d60a7b99f00406fd81485cb29314a067a1652
