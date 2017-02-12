@@ -10,7 +10,6 @@ Tensorflow example code ( largely taken from the CIFAR10_MultiGPU example)
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-
 import os
 import re
 import sys
@@ -330,6 +329,12 @@ def train():
         log_device_placement=FLAGS.log_device_placement))
     sess.run(init)
 
+    # Session code in the event we wanted to add a TFDBG wrapper.
+    if FLAGS.debug:
+      sess = tf_debug.LocalCLIDebugWrapperSession(sess)
+      sess.add_tensor_filter('has_inf_or_nan',
+                             tf_debug.has_inf_or_nan)
+    
     # Start the queue runners.
     tf.train.start_queue_runners(sess=sess)
 
@@ -451,3 +456,25 @@ if __name__ == '__main__':
 
   return softmax_linear
   
+def print_model_profiler():
+  param_stats = tf.contrib.tfprof.model_analyzer.print_model_analysis(
+    tf.get_default_graph(),
+    tfprof_options=tf.contrib.tfprof.model_analyzer.
+        TRAINABLE_VARS_PARAMS_STAT_OPTIONS)
+  sys.stdout.write('total_params: %d\n' % param_stats.total_parameters)
+  tf.contrib.tfprof.model_analyzer.print_model_analysis(
+    tf.get_default_graph(),
+    tfprof_options=tf.contrib.tfprof.model_analyzer.FLOAT_OPS_OPTIONS)
+
+  #If we are running current session with metadata, we can get timing diagnosis
+  tf.contrib.tfprof.model_analyzer.print_model_analysis(
+    tf.get_default_graph(),
+    run_meta=run_metadata,
+    tfprof_options=tf.contrib.tfprof.model_analyzer.PRINT_ALL_TIMING_MEMORY)
+  # This requires running the below code first in the session train_op :
+  #run_metadata = tf.RunMetadata()
+  #with tf.Session() as sess:
+  #_ = sess.run(train_op,
+  #             options=tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE),
+  #             run_metadata=run_metadata)
+  #
