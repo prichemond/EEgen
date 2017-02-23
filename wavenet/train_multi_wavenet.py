@@ -15,12 +15,11 @@ LEARNING_RATE = 0.001
 NGPUS = 4
 
 
-SGDOptimizer = SGD(lr=LEARNING_RATE, momentum = 0.9, nesterov = True)
+SGDOptimizer = SGD(lr=LEARNING_RATE, momentum=0.9, nesterov=True)
 AdamOptimizer = Adam(lr=LEARNING_RATE)
 NAdamOptimizer = Nadam(lr=LEARNING_RATE)
 
 # Model definition.
-# TODO : work in global L2 regularization within the skip-connections block.
 
 def wavenetBlock(atrous_n_filters, atrous_filter_size, atrous_rate):
     def f(input_):
@@ -36,12 +35,17 @@ def wavenetBlock(atrous_n_filters, atrous_filter_size, atrous_rate):
                                           W_regularizer=l2(L2REGULARIZER),
                                           activation='sigmoid')(input_)
         merged = merge([tanh_out, sigmoid_out], mode='mul')
-        skip_out = Convolution1D(1, 1, activation='relu', border_mode='same')(merged)
+        skip_out = Convolution1D(1, 1, activation='relu',
+                                 border_mode='same',
+                                 W_regularizer=l2(L2REGULARIZER))(merged)
         out = merge([skip_out, residual], mode='sum')
         return out, skip_out
     return f
 
-def get_basic_generative_model(input_size):
+#TODO : work in global L2 regularization within the skip-connections block.
+#TODO : get average pooling in.
+
+def get_generative_model(input_size):
     input_ = Input(shape=(input_size, 1))
     A, B = wavenetBlock(NFILTERS, FILTERSIZE, 2)(input_)
     skip_connections = [B]
@@ -111,8 +115,8 @@ def parallelize_and_compile(model):
                   metrics=['accuracy'])
     return model
 
-def wavenet_fullmodel():
-    simplemodel = get_basic_generative_model(256*64)
+def get_fullmodel():
+    simplemodel = get_generative_model(256*64)
     simplemodel.summary()
 
     input('Parallelizing model, any key to continue.')
@@ -120,4 +124,4 @@ def wavenet_fullmodel():
     simplemodel.summary()
     return
 
-wavenet_fullmodel()
+get_fullmodel()
