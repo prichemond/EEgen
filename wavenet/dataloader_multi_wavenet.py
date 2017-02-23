@@ -2,21 +2,20 @@ import numpy as np
 import tensorflow as tf
 import os
 import sys
+from scipy.io.wavfile import read
 
-frame_size = 256 * 64
-
-def get_signal(filename):
+def load_signal(filename):
     sr, signal = read(filename)
     signal = signal.astype(float)
     # Normalize
     signal = signal - signal.min()
     signal = signal / (signal.max() - signal.min())
     signal = (signal - 0.5) * 2
-    return sr, signal
+    return signal, sr
 
-#TODO : vectorize the below code
+#TODO : vectorize the below code.
 
-def frame_generator(sr, signal, frame_size, frame_shift, minibatch_size=20):
+def frame_generator(signal, sr, frame_size, frame_shift, minibatch_size=20):
     signal_len = len(signal)
     X = []
     y = []
@@ -28,7 +27,7 @@ def frame_generator(sr, signal, frame_size, frame_shift, minibatch_size=20):
             if i + frame_size >= signal_len:
                 break
             temp = signal[i + frame_size]
-            
+           
             # Mu-law 'companding' transform, quantizes on 8-bit.
             target_val = int((np.sign(temp) * (np.log(1 + 256*abs(temp)) / (
                 np.log(1+256))) + 1)/2.0 * 255)

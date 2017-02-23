@@ -5,6 +5,7 @@ from keras.layers import (Activation, AtrousConvolution1D, Convolution1D, Dense,
 from keras.models import Model
 from keras.optimizers import SGD, Adam, Nadam
 from keras.regularizers import l2
+from dataloader_multi_wavenet import load_signal, frame_generator
 
 NFILTERS = 64
 FILTERSIZE = 3
@@ -59,13 +60,13 @@ def get_generative_model(input_size):
     net = Flatten()(net)
     net = Dense(256, activation='softmax')(net)
     model = Model(input=input_, output=net)
-    
+  
     return model
 
 def make_parallel(model, gpu_count):
     def get_slice(data, idx, parts):
         shape = tf.shape(data)
-        
+      
         size = tf.concat([shape[:1] // parts, shape[1:]], 0)
         stride = tf.concat([shape[:1] // parts, shape[1:] * 0], 0)
         
@@ -122,6 +123,32 @@ def get_fullmodel():
     input('Parallelizing model, any key to continue.')
     simplemodel = parallelize_and_compile(simplemodel)
     simplemodel.summary()
+    return simplemodel
+
+def train_wavenet():
+    
+    wavenet = get_fullmodel()
+    TRAIN_FLAG = False
+    # TODO : change constants later on.
+    FRAME_SIZE = 256 * 64
+    FRAME_SHIFT = 128
+    N_EPOCHS = 1000
+    S_EPOCHS = 3000
+    
+    try:
+        signal_train, sr = load_signal('train.wav')
+        signal_val, sr = load_signal('val.wav')
+        data_gen_val = frame_generator(signal_val, sr, FRAME_SIZE, FRAME_SHIFT)
+        data_gen_train = frame_generator(signal_train, sr, FRAME_SIZE, FRAME_SHIFT)
+    except:
+        print('Unable to load either training or validation data.')
+
+    # Train statement
+    if TRAIN_FLAG:
+        wavenet.fit_generator(data_gen_train, samples_per_epoch=S_EPOCHS,
+                              nb_epoch=N_EPOCHS, validation_data=data_gen_val,
+                              nb_val_samples=500, verbose=1)
+
     return
 
-get_fullmodel()
+train_wavenet()
