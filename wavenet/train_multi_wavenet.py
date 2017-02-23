@@ -144,6 +144,6 @@ def train_wavenet():
     except:
         print('Unable to load training data.')
 
-     return
+    return
 
 train_wavenet()
