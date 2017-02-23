@@ -1,8 +1,9 @@
 import numpy as np
 import tensorflow as tf
 import os
-import sys
+import time
 from scipy.io.wavfile import read
+from scipy.io import loadmat
 
 def load_signal(filename):
     sr, signal = read(filename)
@@ -13,7 +14,7 @@ def load_signal(filename):
     signal = (signal - 0.5) * 2
     return signal, sr
 
-#TODO : vectorize the below code.
+# TODO : vectorize the below code.
 
 def frame_generator(signal, sr, frame_size, frame_shift, minibatch_size=20):
     signal_len = len(signal)
@@ -37,3 +38,44 @@ def frame_generator(signal, sr, frame_size, frame_shift, minibatch_size=20):
                 yield np.array(X), np.array(y)
                 X = []
                 y = []
+
+
+                
+def load_filename_as_mat(filename, verbose=False):
+    starttime = time.time()
+    if os.path.exists(filename):
+        try:
+            mat = loadmat(filename)
+            data = mat['dataStruct']['data'][0][0]
+            data = data_reduction(data)
+            if verbose:
+                if (np.count_nonzero(data) < 10) or (np.any(np.std(data, axis=0) < 0.5)):
+                    print('Warning : file %s is all dropout.' % filename)
+                print('Time elapsed: %.3fs' % (time.time() - starttime) )
+   
+        except:
+            print('Unable to load mat file ' + filename)
+
+    return data
+
+
+def load_all_folder_matrices(folder, verbosity=False):
+    starttime = time.time()
+    all_filenames = tf.gfile.Glob(folder)
+    number_filenames = len(all_filenames)
+    if verbosity:
+        print('Number of files to load : %f' % number_filenames)
+    
+    matlist = []
+    for files in all_filenames:
+        matlist.append(load_filename_as_mat(files.encode(), verbosity))
+
+    if verbosity:
+        print('Time elapsed: %.3fs' % (time.time() - starttime))
+        
+    return matlist
+
+
+def data_reduction(data):
+    
+    return data
