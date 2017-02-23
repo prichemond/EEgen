@@ -1,4 +1,3 @@
-A
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -47,7 +46,7 @@ def dilated_block(input, rate, scope):
         input = slim.convolution(input, layer_input.get_shape()[3], 1,
                              normalizer_fn=None, activation_fn=None, scope='1x1toRes')
         return tf.add(input, layer_input)
-OB
+
         
 def wavenet_model(inputs,
               weight_decay=0.00004,

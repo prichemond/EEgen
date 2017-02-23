@@ -3,15 +3,24 @@ import tensorflow as tf
 from keras.layers import (Activation, AtrousConvolution1D, Convolution1D, Dense,
     Flatten, Input, Lambda, merge)
 from keras.models import Model
-
-NGPUS = 4
+from keras.optimizers import SGD, Adam, Nadam
+from keras.regularizers import l2
 
 NFILTERS = 64
-FILTERSIZE = 2
+FILTERSIZE = 3
 FILTERSTACK = 20
 
+L2REGULARIZER = 0.00005
+LEARNING_RATE = 0.001
+NGPUS = 4
+
+
+SGDOptimizer = SGD(lr=LEARNING_RATE, momentum = 0.9, nesterov = True)
+AdamOptimizer = Adam(lr=LEARNING_RATE)
+NAdamOptimizer = Nadam(lr=LEARNING_RATE)
+
 # Model definition.
-# TODO : work in L2 regularization inside.
+# TODO : work in global L2 regularization within the skip-connections block.
 
 def wavenetBlock(atrous_n_filters, atrous_filter_size, atrous_rate):
     def f(input_):
@@ -19,10 +28,12 @@ def wavenetBlock(atrous_n_filters, atrous_filter_size, atrous_rate):
         tanh_out = AtrousConvolution1D(atrous_n_filters, atrous_filter_size,
                                        atrous_rate=atrous_rate,
                                        border_mode='same',
+                                       W_regularizer=l2(L2REGULARIZER),
                                        activation='tanh')(input_)
         sigmoid_out = AtrousConvolution1D(atrous_n_filters, atrous_filter_size,
                                           atrous_rate=atrous_rate,
                                           border_mode='same',
+                                          W_regularizer=l2(L2REGULARIZER),
                                           activation='sigmoid')(input_)
         merged = merge([tanh_out, sigmoid_out], mode='mul')
         skip_out = Convolution1D(1, 1, activation='relu', border_mode='same')(merged)
@@ -45,9 +56,6 @@ def get_basic_generative_model(input_size):
     net = Dense(256, activation='softmax')(net)
     model = Model(input=input_, output=net)
     
-    model.compile(loss='categorical_crossentropy', optimizer='adam',
-                  metrics=['accuracy'])
-    model.summary()
     return model
 
 def make_parallel(model, gpu_count):
@@ -99,11 +107,17 @@ def parallelize_and_compile(model):
     if NGPUS>1:
         model = make_parallel(model, NGPUS)
 
-    model.compile(loss='categorical_crossentropy', optimizer='adam',
+    model.compile(loss='categorical_crossentropy', optimizer=NAdamOptimizer,
                   metrics=['accuracy'])
     return model
 
+def wavenet_fullmodel():
+    simplemodel = get_basic_generative_model(256*64)
+    simplemodel.summary()
 
-simplemodel = get_basic_generative_model(256*64)
-simplemodel.summary()
-simplemodel = parallelize_and_compile(simplemodel)
+    input('Parallelizing model, any key to continue.')
+    simplemodel = parallelize_and_compile(simplemodel)
+    simplemodel.summary()
+    return
+
+wavenet_fullmodel()
