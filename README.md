@@ -3,6 +3,7 @@
 ## Requirements :
 - Python 3
 - TensorFlow 1.0.0+ https://www.tensorflow.org/
+- Keras http://keras.io
 - MNE https://github.com/mne-tools/mne-python
 
 ## Papers implemented :
