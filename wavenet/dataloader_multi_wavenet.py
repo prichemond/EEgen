@@ -80,6 +80,11 @@ def load_all_folder_matrices(folder, verbosity=False):
 def data_reduction(data):
     # TODO : Try out Blackman-Harris or Chebyshev window resampling.
     data = resample(data, 600 * 256)
+    # Average all channels together - temporary hack, will learn 1x1 conv
+    # instead
+    # Adding comment.
+    data = np.mean(data, axis=1)
+    # need to append, mean-remove, normalize and 8-bit quantize
     return data
 
 matpathtrain = '/home/pierre/pythonscripts/AutoRegressive/eegnet/data/train/*.mat'
