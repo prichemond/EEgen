@@ -73,6 +73,7 @@ def load_all_folder_matrices(folder, verbosity=False):
         signal = load_filename_as_mat(files, verbosity)
         if not((np.count_nonzero(signal) < 10) or (np.any(np.std(signal, axis=0) < 0.5))):
             # Normalization step.
+            signal = signal - np.mean(signal)
             smax = np.max(signal)
             smin = np.min(signal)
             signal = signal / (smax - smin)
