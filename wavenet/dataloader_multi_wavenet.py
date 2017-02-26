@@ -8,7 +8,7 @@ from scipy.io.wavfile import read
 from scipy.io import loadmat
 from scipy.signal import resample, get_window
 
-PROJECTOR_CHANNEL = 4
+PROJECTOR_CHANNEL = 12
 
 
 def load_signal(filename):
@@ -72,6 +72,11 @@ def load_all_folder_matrices(folder, verbosity=False):
     for files in all_filenames:
         signal = load_filename_as_mat(files, verbosity)
         if not((np.count_nonzero(signal) < 10) or (np.any(np.std(signal, axis=0) < 0.5))):
+            # Normalization step.
+            smax = np.max(signal)
+            smin = np.min(signal)
+            signal = signal / (smax - smin)
+
             matlist.append(signal)
         else:
             if verbosity:
@@ -90,11 +95,11 @@ def data_reduction(data):
     data = data[:, PROJECTOR_CHANNEL]
     # TODO : Try out Blackman-Harris or Chebyshev window resampling.
     data = resample(data, 600 * 256)
-    # need to append, mean-remove, normalize and 8-bit quantize
+
     return data
 
-matpathtrain = '/home/pierre/pythonscripts/AutoRegressive/eegnet/data/train/*.mat'
-alleegs = load_all_folder_matrices(matpathtrain, verbosity=True)
-# Serialize.
+matpathfilter = '/home/pierre/pythonscripts/AutoRegressive/eegnet/data/train/*.mat'
+alleegs = load_all_folder_matrices(matpathfilter, verbosity=True)
+# Serialize large file.
 with open('all_eeg_files.pkl', "wb") as pickle_file:
     pickle.dump(alleegs, pickle_file)

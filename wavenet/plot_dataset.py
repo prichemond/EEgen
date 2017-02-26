@@ -7,7 +7,7 @@ from scipy.signal import resample
 import pandas as pd
 import time
 
-NUM_FIGS = 20
+NUM_FIGS = 100
 
 
 # Generate a multi-channel plot from a raw single .mat file.
@@ -80,6 +80,6 @@ def plot_dataset_subset(filename):
 
     return
 
-# plot_dataset_subset('./all_eeg_files.pkl')
+plot_dataset_subset('./all_eeg_files.pkl')
 train_path = '/home/pierre/pythonscripts/AutoRegressive/eegnet/data/train/'
-plot_single_matfile(train_path + '1_531_0.mat', verbose=True)
+#plot_single_matfile(train_path + '1_531_0.mat', verbose=True)
