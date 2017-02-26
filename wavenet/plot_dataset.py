@@ -80,6 +80,7 @@ def plot_dataset_subset(filename):
 
     return
 
-plot_dataset_subset('./all_eeg_files.pkl')
-train_path = '/home/pierre/pythonscripts/AutoRegressive/eegnet/data/train/'
-#plot_single_matfile(train_path + '1_531_0.mat', verbose=True)
+if __name__ == "main":
+    plot_dataset_subset('./all_eeg_files.pkl')
+    train_path = '/home/pierre/pythonscripts/AutoRegressive/eegnet/data/train/'
+    #plot_single_matfile(train_path + '1_531_0.mat', verbose=True)

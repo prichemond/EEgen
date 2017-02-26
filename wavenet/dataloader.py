@@ -10,16 +10,6 @@ from scipy.signal import resample, get_window
 
 PROJECTOR_CHANNEL = 12
 
-
-def load_signal(filename):
-    sr, signal = read(filename)
-    signal = signal.astype(float)
-    # Normalize
-    signal = signal - signal.min()
-    signal = signal / (signal.max() - signal.min())
-    signal = (signal - 0.5) * 2
-    return signal, sr
-
 # TODO : vectorize the below code.
 
 
@@ -73,10 +63,9 @@ def load_all_folder_matrices(folder, verbosity=False):
         signal = load_filename_as_mat(files, verbosity)
         if not((np.count_nonzero(signal) < 10) or (np.any(np.std(signal, axis=0) < 0.5))):
             # Normalization step.
-            signal = signal - np.mean(signal)
-            smax = np.max(signal)
-            smin = np.min(signal)
-            signal = signal / (smax - smin)
+            signal -= np.min(signal)
+            signal /= (np.max(signal) - np.min(signal))
+            signal = (signal - 0.5) * 2.0
 
             matlist.append(signal)
         else:
@@ -99,8 +88,41 @@ def data_reduction(data):
 
     return data
 
-matpathfilter = '/home/pierre/pythonscripts/AutoRegressive/eegnet/data/train/*.mat'
-alleegs = load_all_folder_matrices(matpathfilter, verbosity=True)
-# Serialize large file.
-with open('all_eeg_files.pkl', "wb") as pickle_file:
-    pickle.dump(alleegs, pickle_file)
+
+def pickled_file():
+    matpathfilter = '/home/pierre/pythonscripts/AutoRegressive/eegnet/data/train/*.mat'
+    alleegs = load_all_folder_matrices(matpathfilter, verbosity=True)
+    # Serialize large file.
+    with open('all_eeg_files.pkl', "wb") as pickle_file:
+        pickle.dump(alleegs, pickle_file)
+
+    return
+
+# Unnecessary ever since the nd.array() constructor trick.
+
+
+def aggregate_pickled_file():
+    file_train = open('./all_eeg_files.pkl', 'rb')
+    signal_train = pickle.load(file_train)
+    sr = 256
+
+    table = np.array(signal_train)
+    print(table.shape)
+
+    # Turn list of np_arrays into appended, 1d np_array before
+    # getting companded frames.
+    lensignal = len(signal_train)
+    appendedsignal = signal_train[0]
+    sizeone = 256 * 600
+    for i in range(lensignal - 1):
+        # This loop doesn't run in place and as such is slow.
+        appendedsignal = np.append(appendedsignal, signal_train[i + 1])
+        print(appendedsignal.shape[0] // sizeone)
+
+    filesave_train = open('all_eeg_files_onego.pkl', 'wb')
+    pickle.dump(appendedsignal, filesave_train)
+    print('Aggregate file saved to disk.')
+    return
+
+# if __name__ == "main":
+    pickled_file()
