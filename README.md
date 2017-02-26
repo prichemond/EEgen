@@ -13,3 +13,4 @@
 
 ## Acknowledgements
 https://github.com/projectappia/eegnet - A very similar idea with great implementation.
+https://medium.com/@kuza55/transparent-multi-gpu-training-on-tensorflow-with-keras-8b0016fd9012#.xv8uj9q1o - Kuza55's transparent multi-GPU tower replication with TF/Keras.
