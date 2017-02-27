@@ -11,13 +11,16 @@ from dataloader import frame_generator
 
 NFILTERS = 64
 FILTERSIZE = 3
-FILTERSTACK = 8
+# Looks like currently we are limited to 5 stacking blocks
+# Due to a bug in 'atrous' not running more than a 280 ( 256 really ) rate on Tensorflow.
+# Cf. Stack Overflow issue : https://github.com/fchollet/keras/issues/5529
+FILTERSTACK = 5
 
 L2REGULARIZER = 0.00005
 LEARNING_RATE = 0.001
 NGPUS = 4
 
-FRAME_SIZE = 256 * 8
+FRAME_SIZE = 256 * 32
 FRAME_SHIFT = 32
 N_EPOCHS = 1000
 S_EPOCHS = 3000
