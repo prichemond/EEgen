@@ -11,21 +11,24 @@ from dataloader import frame_generator
 
 NFILTERS = 64
 FILTERSIZE = 3
-FILTERSTACK = 20
+FILTERSTACK = 8
 
 L2REGULARIZER = 0.00005
 LEARNING_RATE = 0.001
 NGPUS = 4
 
+FRAME_SIZE = 256 * 8
+FRAME_SHIFT = 32
+N_EPOCHS = 1000
+S_EPOCHS = 3000
+
 
 SGDOptimizer = SGD(lr=LEARNING_RATE, momentum=0.9, nesterov=True)
 AdamOptimizer = Adam(lr=LEARNING_RATE)
 NAdamOptimizer = Nadam(lr=LEARNING_RATE)
-TRAIN_FLAG = False
+
 
 # Model definition.
-
-
 def wavenetBlock(atrous_n_filters, atrous_filter_size, atrous_rate):
     def f(input_):
         residual = input_
@@ -119,48 +122,48 @@ def parallelize_and_compile(model):
     if NGPUS > 1:
         model = make_parallel(model, NGPUS)
 
-    model.compile(loss='categorical_crossentropy', optimizer=NAdamOptimizer,
+    model.compile(loss='categorical_crossentropy', optimizer=AdamOptimizer,
                   metrics=['accuracy'])
     return model
 
 
 def get_fullmodel():
-    simplemodel = get_generative_model(256 * 64)
+    simplemodel = get_generative_model(FRAME_SIZE)
     simplemodel.summary()
-    input('Parallelizing model, any key to continue.')
+    print('Parallelizing model')
     simplemodel = parallelize_and_compile(simplemodel)
     simplemodel.summary()
     return simplemodel
 
 
 def train_wavenet():
-
+    # Build model.
     wavenet = get_fullmodel()
 
-    FRAME_SIZE = 256 * 64
-    FRAME_SHIFT = 16
-    N_EPOCHS = 1000
-    S_EPOCHS = 3000
-
+    # Load full dataset into signal_train.
+    print('Loading dataset...')
     file_train = open('./all_eeg_files.pkl', 'rb')
     signal_train = pickle.load(file_train)
     # Turn the list of arrays into single array, via constructor & flattening.
     signal_train = np.ravel(np.array(signal_train))
+    print('Dataset loaded.')
     sr = 256
+    n_train_examples = (signal_train.shape[0] - FRAME_SIZE - 1
+                        / float(FRAME_SHIFT))
+    print('Total training examples : %s' % n_train_examples)
 
+    # Start training via the online one-hot & quantizing function
+    # 'frame_generator'
     data_gen_train = frame_generator(
         signal_train, sr, FRAME_SIZE, FRAME_SHIFT)
     # Train statement
-    if TRAIN_FLAG:
-        wavenet.fit_generator(data_gen_train, samples_per_epoch=S_EPOCHS,
-                              nb_epoch=N_EPOCHS, verbose=1)
+    # For now : no validation data (hmm...), no callbacks.
+    wavenet.fit_generator(data_gen_train, samples_per_epoch=S_EPOCHS,
+                          nb_epoch=N_EPOCHS, verbose=1)
 
-        str_timestamp = str(int(time.time()))
-        wavenet.save('models/model_' + str_timestamp +
-                     '_' + str(N_EPOCHS) + '.h5')
-
-    # except:
-    #    print('Unable to load training data.')
+    str_timestamp = str(int(time.time()))
+    wavenet.save('models/model_' + str_timestamp +
+                 '_' + str(N_EPOCHS) + '.h5')
 
     return
 
