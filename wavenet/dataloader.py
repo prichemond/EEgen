@@ -92,6 +92,27 @@ def data_reduction(data):
     return data
 
 
+def load_dataset(frame_size, frame_shift):
+    # Load full dataset into signal_train.
+    print('Loading dataset...')
+    file_train = open('./all_eeg_files.pkl', 'rb')
+    train = pickle.load(file_train)
+    # Turn the list of arrays into single array, via constructor & flattening.
+    train = np.ravel(np.array(train))
+    print('Dataset loaded.')
+    # Split into training and validation.
+    # Dirty for now, will call sklearn later
+    split_fraction = 0.80
+    split_number = int(split_fraction * float(train.shape[0]))
+    val = train[split_number:-1]
+    train = train[0:split_number]
+
+    n_train_examples = (train.shape[0] - frame_size - 1
+                        / float(frame_shift))
+    print('Training examples ex validation : %s' % n_train_examples)
+    return train, val
+
+
 def pickled_file():
     matpathfilter = '/home/pierre/pythonscripts/AutoRegressive/eegnet/data/train/*.mat'
     alleegs = load_all_folder_matrices(matpathfilter, verbosity=True)

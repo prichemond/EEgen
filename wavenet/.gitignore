@@ -1,3 +1,7 @@
 all_eeg_files.pkl
 *.pyc
 *.png
+logs/events*
+logs/trainlog.csv
+models/*.hdf5
+__pycache__/*
