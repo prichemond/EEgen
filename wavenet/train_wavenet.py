@@ -1,10 +1,11 @@
 import numpy as np
 import tensorflow as tf
 from keras.layers import (Activation, AtrousConvolution1D, Convolution1D, Dense,
-                          Flatten, Input, Lambda, merge)
+                          Flatten, Dropout, Input, Lambda, merge)
 from keras.models import Model
 from keras.optimizers import SGD, Adam, Nadam
 from keras.regularizers import l2
+from keras.layers.normalization import BatchNormalization
 import time
 import pickle
 from dataloader import frame_generator
@@ -13,7 +14,7 @@ NFILTERS = 64
 FILTERSIZE = 3
 # Looks like currently we are limited to 5 stacking blocks if 9 filtermod
 # Due to a bug in 'atrous' not running more than a 280 ( 256 really ) rate on Tensorflow.
-# Cf. Stack Overflow issue : https://github.com/fchollet/keras/issues/5529
+# Stack Overflow issue : https://github.com/fchollet/keras/issues/5529
 FILTERSTACK = 20
 FILTERMOD = 7
 
@@ -47,15 +48,17 @@ def wavenetBlock(atrous_n_filters, atrous_filter_size, atrous_rate):
                                           W_regularizer=l2(L2REGULARIZER),
                                           activation='sigmoid')(input_)
         merged = merge([tanh_out, sigmoid_out], mode='mul')
-        skip_out = Convolution1D(1, 1, activation='relu',
-                                 border_mode='same',
-                                 W_regularizer=l2(L2REGULARIZER))(merged)
+        # Could add batchnorm here like so. Way too slow though :
+        merged = BatchNormalization()(merged)
+        skip_out = Convolution1D(1, 1, border_mode='same',
+                                 W_regularizer=l2(L2REGULARIZER),
+                                 activation='relu')(merged)
         out = merge([skip_out, residual], mode='sum')
         return out, skip_out
     return f
 
 # TODO : work in global L2 regularization within the skip-connections block.
-# TODO : get average pooling in.
+# TODO : get average pooling or dropout in.
 
 
 def get_generative_model(input_size):
@@ -71,6 +74,8 @@ def get_generative_model(input_size):
     net = Convolution1D(1, 1)(net)
     net = Flatten()(net)
     net = Dense(256, activation='softmax')(net)
+    # Some extra regularization in the fully-connected layer :
+    net = Dropout(0.5)(net)
     model = Model(input=input_, output=net)
 
     return model
