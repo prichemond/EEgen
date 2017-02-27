@@ -6,6 +6,8 @@ from keras.models import Model
 from keras.optimizers import SGD, Adam, Nadam
 from keras.regularizers import l2
 from keras.layers.normalization import BatchNormalization
+from sklearn.model_selection import StratifiedShuffleSplit
+from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
 import time
 import pickle
 from dataloader import frame_generator
@@ -48,7 +50,7 @@ def wavenetBlock(atrous_n_filters, atrous_filter_size, atrous_rate):
                                           W_regularizer=l2(L2REGULARIZER),
                                           activation='sigmoid')(input_)
         merged = merge([tanh_out, sigmoid_out], mode='mul')
-        # Could add batchnorm here like so. Way too slow though :
+        # Could add batchnorm here like so. Way slow though :
         merged = BatchNormalization()(merged)
         skip_out = Convolution1D(1, 1, border_mode='same',
                                  W_regularizer=l2(L2REGULARIZER),
@@ -157,18 +159,33 @@ def train_wavenet():
     signal_train = np.ravel(np.array(signal_train))
     print('Dataset loaded.')
     sr = 256
+    # Split into training and validation.
+    # Dirty for now, will call sklearn later
+    split_fraction = 0.80
+    split_number = int(split_fraction * float(signal_train.shape[0]))
+    signal_val = signal_train[split_number:-1]
+    signal_train = signal_train[0:split_number]
+
     n_train_examples = (signal_train.shape[0] - FRAME_SIZE - 1
                         / float(FRAME_SHIFT))
-    print('Total training examples : %s' % n_train_examples)
+    print('Training examples ex validation : %s' % n_train_examples)
 
-    # Start training via the online one-hot & quantizing function
-    # 'frame_generator'
-    data_gen_train = frame_generator(
-        signal_train, sr, FRAME_SIZE, FRAME_SHIFT)
+    # Start training via the 'frame_generator' online one-hot & quantizing
+    # function
+    data_gen_train = frame_generator(signal_train, sr, FRAME_SIZE, FRAME_SHIFT)
+    data_gen_val = frame_generator(signal_val, sr, FRAME_SIZE, FRAME_SHIFT)
+
+    # Add relevant training helpers ('callbacks' in Keras parlance.)
+    csv_cb = CSVLogger('./logs/trainlog.csv')
+    modelsave_cb = ModelCheckpoint('./models/weights.{epoch:02d}-{val_loss:.2f}.hdf5',
+                                   verbose=1)
+    tensorboard_cb = TensorBoard(log_dir='./logs')
+
     # Train statement
-    # For now : no validation data (hmm...), no callbacks.
-    wavenet.fit_generator(data_gen_train, samples_per_epoch=S_EPOCHS,
-                          nb_epoch=N_EPOCHS, verbose=1)
+    # For now : no callbacks ; check nb_val_samples.
+    wavenet.fit_generator(data_gen_train, samples_per_epoch=S_EPOCHS, nb_epoch=N_EPOCHS,
+                          validation_data=data_gen_val, nb_val_samples=FRAME_SIZE,
+                          verbose=1, callbacks=[modelsave_cb, csv_cb, tensorboard_cb])
 
     str_timestamp = str(int(time.time()))
     wavenet.save('models/model_' + str_timestamp +
