@@ -11,10 +11,11 @@ from dataloader import frame_generator
 
 NFILTERS = 64
 FILTERSIZE = 3
-# Looks like currently we are limited to 5 stacking blocks
+# Looks like currently we are limited to 5 stacking blocks if 9 filtermod
 # Due to a bug in 'atrous' not running more than a 280 ( 256 really ) rate on Tensorflow.
 # Cf. Stack Overflow issue : https://github.com/fchollet/keras/issues/5529
-FILTERSTACK = 5
+FILTERSTACK = 20
+FILTERMOD = 7
 
 L2REGULARIZER = 0.00005
 LEARNING_RATE = 0.001
@@ -22,7 +23,7 @@ NGPUS = 4
 
 FRAME_SIZE = 256 * 32
 FRAME_SHIFT = 32
-N_EPOCHS = 1000
+N_EPOCHS = 2000
 S_EPOCHS = 3000
 
 
@@ -62,7 +63,7 @@ def get_generative_model(input_size):
     A, B = wavenetBlock(NFILTERS, FILTERSIZE, 2)(input_)
     skip_connections = [B]
     for i in range(FILTERSTACK):
-        A, B = wavenetBlock(NFILTERS, FILTERSIZE, 2**((i + 2) % 9))(A)
+        A, B = wavenetBlock(NFILTERS, FILTERSIZE, 2**((i + 2) % FILTERMOD))(A)
         skip_connections.append(B)
     net = merge(skip_connections, mode='sum')
     net = Activation('relu')(net)
@@ -125,7 +126,7 @@ def parallelize_and_compile(model):
     if NGPUS > 1:
         model = make_parallel(model, NGPUS)
 
-    model.compile(loss='categorical_crossentropy', optimizer=AdamOptimizer,
+    model.compile(loss='categorical_crossentropy', optimizer=NAdamOptimizer,
                   metrics=['accuracy'])
     return model
 
