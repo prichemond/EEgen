@@ -10,6 +10,8 @@ from sklearn.model_selection import StratifiedShuffleSplit
 from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
 import time
 import pickle
+import argparse as arg
+import json
 from dataloader import load_dataset, frame_generator
 
 NFILTERS = 64
@@ -51,16 +53,13 @@ def wavenetBlock(atrous_n_filters, atrous_filter_size, atrous_rate):
                                           activation='sigmoid')(input_)
         merged = merge([tanh_out, sigmoid_out], mode='mul')
         # Could add batchnorm here like so. Way slow though :
-        merged = BatchNormalization()(merged)
+        # merged = BatchNormalization()(merged)
         skip_out = Convolution1D(1, 1, border_mode='same',
                                  W_regularizer=l2(L2REGULARIZER),
                                  activation='relu')(merged)
         out = merge([skip_out, residual], mode='sum')
         return out, skip_out
     return f
-
-# TODO : work in global L2 regularization within the skip-connections block.
-# TODO : get average pooling or dropout in.
 
 
 def get_generative_model(input_size):
@@ -148,10 +147,12 @@ def get_fullmodel():
 
 
 def train_wavenet():
+
     # Build model.
     wavenet = get_fullmodel()
     input('Press any key.')
 
+    # Load dataset.
     signal_train, signal_val = load_dataset(FRAME_SIZE, FRAME_SHIFT)
     sr = 256
     # Start training via 'frame_generator' online one-hot & quantizing function
@@ -174,5 +175,33 @@ def train_wavenet():
                  '_' + str(N_EPOCHS) + '.hdf5')
 
     return
+
+
+# Get arguments.
+parser = arg.ArgumentParser()
+parser.add_argument('-n', '--nfilters', type=int, default=64,
+                    help='Number of feature maps per branch')
+parser.add_argument('-f', '--filtersize', type=int, default=3,
+                    help='Size of filters in number of samples ')
+parser.add_argument('-s', '--filterstack', type=int, default=20,
+                    help='Total number of stacked convolutions')
+parser.add_argument('-m', '--filtermod', type=int, default=7,
+                    help='Maximum dyadic dilation scale per layer')
+parser.add_argument('-l', '--lregularizer', type=float,
+                    default=0.00005, help='L2 regularization strength')
+parser.add_argument('-e', '--learningrate', type=float,
+                    default=0.0001, help='Learning rate')
+parser.add_argument('-g', '-ngpus', type=int, default=4, help='Number of GPUs')
+parser.add_argument('--framesize', type=int,
+                    default=256 * 32, help='Frame size')
+parser.add_argument('--frameshift', type=int, default=32, help='Frame shift')
+parser.add_argument('--nepochs', type=int, default=3000, help='N epochs')
+parser.add_argument('--sepochs', type=int, default=2000, help='S epochs')
+parser.add_argument('--seed', type=int, default=1337,
+                    help='Random seed to use')
+
+args = parser.parse_args()
+rng = np.random.RandomState(1337)
+tf.set_random_seed(args.seed)
 
 train_wavenet()
