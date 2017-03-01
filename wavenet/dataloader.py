@@ -27,10 +27,11 @@ def frame_generator(signal, sr, frame_size, frame_shift, minibatch_size=20):
             temp = signal[i + frame_size]
 
             # Mu-law 'companding' transform, quantizes on 8-bit.
-            # target_val = int((np.sign(temp) * (np.log(1 + 256 * abs(temp)) / (
-            #    np.log(1 + 256))) + 1) / 2.0 * 255)
+            target_val = int((np.sign(temp) * (np.log(1 + 256 * abs(temp)) / (
+                np.log(1 + 256))) + 1) / 2.0 * 255)
             # Here we apply no nonlinear transformation.
-            target_val = temp
+            #target_val = temp
+            print(target_val)
 
             X.append(frame.reshape(frame_size, 1))
             y.append((np.eye(256)[target_val]))
