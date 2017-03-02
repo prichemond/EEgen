@@ -23,7 +23,7 @@ FILTERSTACK = 20
 FILTERMOD = 7
 
 L2REGULARIZER = 0.00005
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.0005
 NGPUS = 4
 
 FRAME_SIZE = 256 * 32
@@ -75,8 +75,6 @@ def get_generative_model(input_size):
     net = Convolution1D(1, 1)(net)
     net = Flatten()(net)
     net = Dense(256, activation='softmax')(net)
-    # Some extra regularization in the fully-connected layer :
-    net = Dropout(0.5)(net)
     model = Model(input=input_, output=net)
 
     return model
@@ -132,7 +130,7 @@ def parallelize_and_compile(model):
     if NGPUS > 1:
         model = make_parallel(model, NGPUS)
 
-    model.compile(loss='categorical_crossentropy', optimizer=NAdamOptimizer,
+    model.compile(loss='categorical_crossentropy', optimizer=AdamOptimizer,
                   metrics=['accuracy'])
     return model
 
@@ -150,7 +148,6 @@ def train_wavenet():
 
     # Build model.
     wavenet = get_fullmodel()
-    input('Press any key.')
 
     # Load dataset.
     signal_train, signal_val = load_dataset(FRAME_SIZE, FRAME_SHIFT)
