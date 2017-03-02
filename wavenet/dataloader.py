@@ -31,8 +31,6 @@ def frame_generator(signal, sr, frame_size, frame_shift, minibatch_size=20):
             #    np.log(1 + 256))) + 1) / 2.0 * 255)
             target_val = int(255.0 * (1.0 + temp) / 2.0)
             # Here we apply no nonlinear transformation.
-            #target_val = temp
-            print(target_val)
 
             X.append(frame.reshape(frame_size, 1))
             y.append((np.eye(256)[target_val]))
